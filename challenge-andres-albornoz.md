@@ -24,7 +24,7 @@ jupyter notebook notebooks/challenge.ipynb   # notebook reproducible end-to-end
 1. **Nordica lidera** el retail (37% del total, +16% YoY). **Urbana es la sorpresa**: solo 21% del total pero +27% YoY y 50% de margen — es la cadena que más aporta al margen incremental.
 2. **Oceano es la única cadena que cae** (-9.86% YoY). La caída NO es homogénea entre tiendas: cada una de las 3 tiendas Oceano tiene un driver distinto (ticket en T007, mixto en T008, tráfico en T009).
 3. **Anomalía crítica de inventario en Oceano**: T007 con DDI 72.5 días (sobrestock, probablemente parkas fuera de temporada) vs T008 con DDI 6.5 días (quiebre inminente). Misma cadena, ratios opuestos.
-4. **Evento Costanera 7-feb** generó +$5.2M de venta y +$2.4M de margen bruto incremental, pero la conversión cayó 7 pp en T001. Valió la pena, pero se dejaron otros ~$4.8M sobre la mesa por saturación operativa.
+4. **Evento Costanera 7-feb** generó +$5.2M de venta y +$2.4M de margen bruto incremental, pero la conversión cayó 7.3 pp en T001 y 3.7 pp en T010. Valió la pena, pero se dejaron otros ~$6.4M de venta sobre la mesa por saturación operativa (~$4.9M T001 + ~$1.5M T010).
 5. **El sábado concentra 20.6%** de la venta semanal. Staffing y reposición deben alinearse con esta realidad (ver Recomendación 2).
 
 ---
@@ -112,7 +112,7 @@ LIMIT 5;
 
 **Análisis:**
 
-Solo 3 tiendas caen YoY, y las 3 son Oceano. Las posiciones 4 y 5 del ranking de "peor desempeño" en realidad están creciendo (+1.7% y +2.5%). La columna `pct_caida_cadena` muestra que T007 es prioritaria: explica el 47% de la caída total de Oceano en CLP absolutos, más que T008 (30%) y T009 (23%) sumadas individualmente.
+Solo 3 tiendas caen YoY, y las 3 son Oceano. Las posiciones 4 y 5 del ranking de "peor desempeño" en realidad están creciendo (+1.7% y +2.5%). La columna `pct_caida_cadena` muestra que T007 es prioritaria: explica el 47% de la caída total de Oceano en CLP absolutos, más que T008 (30%) o T009 (23%) por separado — y solo ligeramente por debajo de la suma de ambas (53%).
 
 **Síntesis y conclusiones:**
 
@@ -273,19 +273,19 @@ print(inv[inv['cod_local'].isin(['T007','T008'])])
 
 ### Anomalía A1 — Venta negativa (devolución) en T009
 
-En `ventas.csv`, la fila `2026-02-10, T009` registra una venta de **-$285.000 CLP** con -2 unidades y -$165.000 de costo. No es un error de digitación: es una **devolución** que se guardó en la tabla de ventas como una fila adicional con signo negativo, compartiendo la misma clave `(fecha, cod_local)` con la venta bruta del mismo día. El resultado es que para T009 el 2026-02-10 hay dos filas en vez de una.
+En `ventas.csv`, la fila `2026-02-10, T009` registra una venta de **-$285.000 CLP** con -2 unidades, -$165.000 de costo y `num_boletas = +1`. No es un error de digitación: es una **devolución** que se guardó en la tabla de ventas como una fila adicional con signos negativos en monetarios/unidades, compartiendo la misma clave `(fecha, cod_local)` con la venta bruta del mismo día. El resultado es que para T009 el 2026-02-10 hay dos filas en vez de una.
 
-**Tratamiento:** mantengo la devolución en el cálculo pero agrego por `(fecha, cod_local)` para que haya una sola fila por día-tienda con la venta **neta de devoluciones** — que es precisamente lo que significa `venta_neta`. La venta neta diaria de T009 el 2026-02-10 pasa de $1.414.010 (bruta) a $1.129.010 (neta). Esto afecta a T009 Feb 2026: venta neta = **$25.103.586** (no $25.388.586 que saldría si se ignoraran las devoluciones). A su vez Oceano agregado = **$96.908.103** y YoY **-9.86%**. También guardo la fila en una tabla `devoluciones` para análisis diagnóstico (tasa de devolución por tienda, etc.) sin perder la trazabilidad.
+**Tratamiento:** mantengo la devolución en el cálculo pero agrego por `(fecha, cod_local)` para que haya una sola fila por día-tienda con la venta **neta de devoluciones** — que es precisamente lo que significa `venta_neta`. La venta neta diaria de T009 el 2026-02-10 pasa de $1.414.010 (bruta) a $1.129.010 (neta). Esto afecta a T009 Feb 2026: venta neta = **$25.103.586** (no $25.388.586 que saldría si se ignoraran las devoluciones). A su vez Oceano agregado = **$96.908.103** y YoY **-9.86%**. También guardo la fila en una tabla `devoluciones` para análisis diagnóstico (tasa de devolución por tienda, etc.) sin perder la trazabilidad. **Decisión explícita sobre `num_boletas`:** el +1 de la devolución se conserva en el agregado (763 boletas en T009), interpretando la devolución como una transacción adicional (boleta de devolución). La alternativa —netear la devolución a -1 boleta, llegando a 761— bajaría la conversión de T009 marginalmente (de 28.42% a 28.34%), un efecto despreciable; por parsimonia se mantiene la versión aditiva.
 
 ### Anomalía A2 — Tráfico faltante en T008 (sensor caído)
 
 En `trafico.csv`, la tienda T008 tiene **tres días consecutivos sin visitantes registrados** (2026-02-05, 06 y 07). Esos mismos días T008 sí tiene ventas, así que no son días cerrados — es un fallo del sensor de conteo.
 
-**Tratamiento:** imputé los valores faltantes con la **mediana por día de la semana** de la misma tienda, usando las otras dos semanas disponibles. Evito a propósito la media: el 7-feb (sábado) fue el día del evento Costanera, con un outlier positivo en toda la red, así que usar media mensual inflaría el imputado. La mediana DOW es robusta a ese outlier. También evité hacer imputación cruzada entre tiendas (T008 tiene escala de tráfico muy distinta a T001). Los 3 días quedan con valores aproximados a 170, 185 y 280 visitantes, consistentes con su historial.
+**Tratamiento:** imputé los valores faltantes con la **mediana por día de la semana** de la misma tienda, tomada sobre el historial disponible de T008 (2025 + 2026 no-nulos). Evito a propósito la media: el 7-feb (sábado) fue el día del evento Costanera, con un outlier positivo en toda la red, así que usar media mensual inflaría el imputado. La mediana DOW es robusta a ese outlier. También evité hacer imputación cruzada entre tiendas (T008 tiene escala de tráfico muy distinta a T001). Los 3 días quedan con valores **207 (jue 05-feb), 268 (vie 06-feb) y 299 (sáb 07-feb)** visitantes, consistentes con su historial. Con estos valores, la conversión T008 del período = 17.73% (consistente con la tabla 1.4).
 
 ### Anomalía A3 — Outliers positivos del sábado 7-feb (evento Costanera)
 
-Al aplicar z-score intra-tienda (crítico: intra-store, no global, porque las escalas de venta entre tiendas son muy distintas), aparecen outliers extremos en **T001 (z=+3.4)** y **T010 (z=+3.3)** exactamente el mismo día: sábado 7-feb 2026. Estadísticamente son outliers, pero **no son errores de datos**: corresponden al evento especial en el Mall Costanera Center.
+Al aplicar z-score intra-tienda (crítico: intra-store, no global, porque las escalas de venta entre tiendas son muy distintas), aparecen outliers extremos en **T001 (z=+3.43)** y **T010 (z=+3.29)** exactamente el mismo día: sábado 7-feb 2026. Además ese día T003 (z=2.31), T012 (z=2.16) y T005 (z=2.05) también cruzan el umbral |z|>2 aunque con menor intensidad — no están en Costanera Center, pero el sábado es estructuralmente el día más fuerte y pudo haber halo promocional macro. Estadísticamente son outliers, pero **no son errores de datos**: los dos primeros corresponden al evento especial en el Mall Costanera Center.
 
 **Tratamiento:** no remover. La señal es real y tiene un contexto conocido. Se analizan por separado en la Parte 2.3 como "efecto evento" en vez de contaminar el análisis general. Este caso ilustra por qué la detección automática de outliers nunca debe aplicarse sin contexto de negocio — si hubiera filtrado por z-score, habría perdido la pregunta más interesante del challenge.
 
@@ -297,9 +297,9 @@ En `inventario.csv`, las dos tiendas Oceano metropolitanas tienen una asimetría
 
 ### Anomalía A5 — Cobertura parcial de productos.csv
 
-`productos.csv` solo tiene detalle SKU para 4 de las 12 tiendas (T001, T004, T007, T010). Las 192 filas cubren solo la primera quincena 2026 y solo esas tiendas.
+`productos.csv` solo tiene detalle SKU para 4 de las 12 tiendas (T001, T004, T007, T010), y con cobertura parcial: las 192 filas capturan 8 SKUs y ~10–16% de la venta total de cada una de esas tiendas (T001 8.7%, T004 15.9%, T007 13.8%, T010 10.1%). No es el catálogo completo de lo vendido, es un SKU-sample.
 
-**Tratamiento:** no hay corrección posible — es una decisión de diseño del dataset. Documenté esta limitante: las conclusiones a nivel de clase/SKU (ej. mix de parkas en T007) **no son extrapolables al resto de la red**. Por suerte, T007 sí está en la cobertura, así que el diagnóstico específico de Oceano sí puede usar este detalle. Pero cualquier afirmación sobre "el mix de Oceano completa" debe limitarse a lo que vemos en T007.
+**Tratamiento:** no hay corrección posible — es una decisión de diseño del dataset. Documenté la doble limitante: (a) 8 de 12 tiendas sin detalle, y (b) dentro de las 4 cubiertas, solo ~10–16% de la venta total está trackeada a nivel SKU. Las conclusiones a nivel de clase/SKU son **direccionales, no censales**. Por suerte, T007 sí está en la cobertura, así que el diagnóstico específico de Oceano puede usar este detalle, pero tratándolo como **señal de mix sobre un sample**, no como la composición exacta de las 5.800 unidades del stock de T007.
 
 ---
 
@@ -364,7 +364,7 @@ Solo T007 de las 3 tiendas Oceano tiene detalle SKU en `productos.csv` (anomalí
 | Shorts     |       30 |   $608.085  |         10.6% |      $20.270 |  53.1% |
 | Jeans      |        8 |   $400.934  |          7.0% |      $50.117 |  52.1% |
 
-**Conclusiones T007**: el 27.5% de la venta viene de **parkas** — en febrero chileno (verano). Solo 12 parkas vendidas en 14 días, pero a ticket $131K cada una. El mix de verano (shorts + poleras) junto solo llega al 34% cuando debería dominar. Esto explica directamente el DDI de 72.5 días: hay mucho inventario de alto valor unitario (parkas $131K) que rota a 1 unidad por día, mientras que las poleras rotan a 2.8/día pero representan menos inventario por unidad. **El stock está mal compuesto por temporada**, no mal calibrado en volumen total.
+**Conclusiones T007**: el 27.5% de la venta SKU-trackeada viene de **parkas** — en febrero chileno (verano). Solo 12 parkas vendidas en 14 días, pero a ticket $131K cada una. En el sample, el mix de verano (shorts + poleras) junto llega al 34% cuando debería dominar. Esto es consistente con un DDI de 72.5 días explicado por **stock mal compuesto por temporada** (hipótesis): las parkas que rotan a ~1 unidad/día por SKU, si representan una fracción alta del inventario físico, explicarían el acumulado. El dataset no desglosa las 5.800 unidades del stock por clase, así que esta es una inferencia direccional —plausible pero no censal— construida desde el SKU sample. El escenario alternativo (volumen total bien calibrado pero mix sesgado) es el más consistente con los datos disponibles.
 
 ### Mix inferido (proxy macro) — T008 y T009
 
@@ -450,7 +450,7 @@ T001 generó $1.56M de margen extra (45% margen × $3.47M venta extra) y T010 ge
 **¿Valió la pena comercialmente?**
 Sí, con una observación estratégica importante. Los $2.4M de margen en un solo día equivalen a aproximadamente 3% del cumplimiento de presupuesto mensual combinado de ambas tiendas, en una sola jornada. Es muy rentable.
 
-Pero — si la conversión del evento se hubiera mantenido en el baseline del sábado control (24% en T001), T001 habría facturado $15.9M en vez de $11.15M. **El evento dejó ~$4.8M CLP sobre la mesa solo en T001 por falta de conversión.** Análogamente en T010, se perdieron ~$1.1M.
+Pero — si la conversión del evento se hubiera mantenido en el baseline del sábado control (24.00% en T001), T001 habría facturado $16.06M en vez de $11.15M. **El evento dejó ~$4.9M CLP sobre la mesa solo en T001 por falta de conversión.** Análogamente en T010 (baseline 20.10%), se perdieron ~$1.5M. Combinado: ~$6.4M de venta no capturada por saturación.
 
 El diagnóstico probable: **saturación operativa** (filas en caja, probadores llenos, quiebres puntuales de tallas de best-sellers). La Recomendación 2 ataca exactamente este punto.
 
@@ -468,7 +468,7 @@ Ambas tiendas crecieron MUY por encima de sus cadenas el 14-feb (Nordica +16% to
 El evento fue **comercialmente exitoso pero operativamente imperfecto**. Tres conclusiones:
 
 1. **Los eventos de alto tráfico son altamente rentables en Costanera** — $2.44M de margen en un día supera el margen incremental que muchas tiendas generan en toda una semana normal. La hipótesis "los eventos no convienen" queda refutada.
-2. **La conversión es el talón de Aquiles operativo**. El valor perdido por saturación (~$5.9M combinado entre ambas tiendas) es **2.4 veces mayor que el margen que efectivamente se capturó**. No es un detalle menor — es el principal driver de ROI futuro del formato evento.
+2. **La conversión es el talón de Aquiles operativo**. El valor perdido por saturación (~$6.4M combinado entre ambas tiendas) es **~2.6 veces mayor que el margen que efectivamente se capturó** ($2.44M). No es un detalle menor — es el principal driver de ROI futuro del formato evento.
 3. **No hay canibalización**, lo que significa que cada nuevo evento tiene potencial genuinamente incremental y no es un juego de suma cero contra otras fechas. Esto vuelve al formato escalable.
 
 La implicancia estratégica es clara: **doblar la apuesta en eventos Costanera, pero invertir primero en preparación operativa** (staffing, stock refuerzo, queue-busting). Hacer más eventos con la misma operación actual sería dejar crecer el "valor perdido" proporcionalmente.
@@ -497,11 +497,11 @@ Una transferencia de unidades "de T007 a T008" sin re-composición del mix solo 
 - **DDI T008**: 6.5 → **28-32 días** con mix rotable (ratio costo vendido/stock ≥0.85, vs 0.58 actual).
 - **DDI T007**: 72.5 → **45 días** en 30 días, sin forzar descuentos masivos que erosionen margen.
 - **T009**: ratio costo vendido/stock de 0.50 → **≥0.70** (subir el precio medio vendido hacia el costo medio del stock, señal de que los productos premium outlet están rotando).
-- **Cumplimiento Oceano agregado**: de 93% actual → **≥100%** próxima quincena, recuperando ≥$6M del gap combinado de T007+T008.
+- **Cumplimiento Oceano agregado**: de 92% actual → **≥100%** próxima quincena, recuperando ≥$6M del gap combinado de T007+T008 (gap actual combinado de los dos: $10.95M).
 
 ### Recomendación 2 · Playbook "evento de alta demanda" para proteger conversión
 
-**Hallazgo:** el evento Costanera del 7-feb trajo +68% de tráfico a T001 y +54% a T010, pero la conversión cayó 7.3 pp en T001 y 3.7 pp en T010. Si la conversión hubiera mantenido el baseline, T001 habría facturado **$4.8M adicionales en un solo día**.
+**Hallazgo:** el evento Costanera del 7-feb trajo +68% de tráfico a T001 y +54% a T010, pero la conversión cayó 7.3 pp en T001 y 3.7 pp en T010. Si la conversión hubiera mantenido el baseline, T001 habría facturado **~$4.9M adicionales en un solo día** (y T010 ~$1.5M; combinado ~$6.4M).
 
 **Acción concreta:** protocolo operativo para días de evento con proyección >+40% tráfico:
 
@@ -544,7 +544,7 @@ Usé la IA como **motor de análisis y construcción** — no como un oráculo a
 
 **Flujo real de trabajo:**
 
-1. **Exploración previa en 3 pasadas.** Antes de entrar al análisis formal corrí 3 exploraciones independientes sobre los CSVs con enfoques distintos (operación por tienda, dinámica YoY por cadena, y calidad/consistencia de datos). Esto me dio el panorama general y las anomalías principales ya detectadas (devolución en T009, nulls de tráfico en T008, asimetría de DDI en Oceano). Llegué a la conversación "formal" con Claude Code sabiendo qué buscar, no preguntando qué hacer.
+1. **Exploración previa en 3 pasadas.** Antes de entrar al análisis formal corrí 3 exploraciones independientes sobre los CSVs con enfoques distintos (operación por tienda, dinámica YoY por cadena, y calidad/consistencia de datos). Esto me dio el panorama general y las anomalías principales ya detectadas (devolución en T009, nulls de tráfico en T008, asimetría de DDI en Oceano). Llegué al análisis final con Claude Code sabiendo qué buscar, no preguntando qué hacer.
 
 2. **Investigación de skills.** Le pedí a Claude Code que buscara en GitHub las skills más relevantes para analytics y data science. Terminó instalando 25 skills agrupadas (EDA programático, auditoría de calidad de datos, validación SQL, visualización científica, dashboards Streamlit, optimización de queries, detección de anomalías, etc.), cada una con su SKILL.md explicando cuándo invocarla.
 
@@ -552,13 +552,15 @@ Usé la IA como **motor de análisis y construcción** — no como un oráculo a
 
 4. **Separación estricta entre razonamiento y cálculo.** Regla no negociable del proyecto: **la IA no realiza directamente cálculos que deban ser deterministas** (sumas, promedios, medianas por grupo, z-scores, descomposiciones log-delta, márgenes, conversión, DDI). Esos se delegan a skills con funciones definidas que corren sobre pandas/SQLite con código auditable. El LLM propone hipótesis, escribe queries, describe resultados y critica su propia salida, pero los números siempre los produce código reproducible. Cada query SQL se validó además con una implementación paralela en pandas (paridad 100%) para atrapar discrepancias de implementación.
 
-5. **Profundización iterativa.** Primera pasada de Claude sobre cada sección → lectura crítica mía → pedido explícito de cruces adicionales ("cruza inventario con productos por categoría para ver el mix", "descompón el ticket en precio unitario × UPT para separar efectos", "compara costo promedio del stock vs costo promedio de lo efectivamente vendido"). La mayoría del valor analítico del informe salió de estos cruces de segundo orden que forcé después de leer la primera versión. El patrón fue consistente: primera pasada correcta pero superficial, segunda pasada profunda tras un cross-check dirigido.
+5. **Profundización iterativa.** Primera pasada de Claude sobre cada sección → lectura crítica mía → pedido explícito de cruces adicionales ("cruza inventario con productos por categoría para ver el mix"). La mayoría del valor analítico del informe salió de estos cruces de segundo orden que forcé después de leer la primera versión. El patrón fue consistente: primera pasada correcta pero superficial, segunda pasada profunda tras un cross-check dirigido.
 
-6. **Redacción del entregable y notebook.** Usé la IA para la escritura del `.md` final y para convertir el análisis completo a un notebook Jupyter reproducible. En el notebook le pedí específicamente qué tipo de gráfico era más expresivo para cada caso (barras apiladas vs heatmap vs líneas, qué paleta, qué DPI) y ajusté cuando la sugerencia no calzaba con el mensaje que quería comunicar.
+6. **Redacción del entregable y notebook.** Usé la IA para la escritura del `.md` final y para convertir el análisis completo a un notebook Jupyter reproducible. En el notebook le pedí específicamente qué tipo de gráfico era más expresivo para cada caso (barras apiladas vs heatmap vs líneas, qué paleta).
 
 7. **Entrega reproducible.** Claude Code se conectó a GitHub, creó el repositorio con las dependencias, la estructura de carpetas y el README, y migró el notebook a Google Colab con el botón "Open in Colab" para que el evaluador lo ejecute sin setup local.
 
 8. **Web app Forus Analytics (side project).** Como bonus, usé Claude Code con skills de desarrollo web para construir [forus-analytics.vercel.app](https://forus-analytics.vercel.app/upload): una app que permite subir los CSVs de este caso (o de cualquier caso similar de retail) y analizarlos interactivamente. Conecta a la API de Anthropic con tu propia API key, de forma que el usuario tenga un asistente de análisis conversacional sobre sus datos en vez de un dashboard pre-armado estático.
+
+9. **QA independiente con un segundo agente.** Al tener el entregable "listo", abrí una sesión nueva de Claude Code con un contexto limpio y le pedí específicamente que actuara como revisor de QA: re-computar toda tabla numérica, verificar coherencia lógica entre secciones, y producir un `QA-REVIEW-HANDOFF.md` con la lista exacta de cambios a aplicar (old_string / new_string / justificación con el cálculo). Esta fue una técnica deliberada para romper el sesgo del autor: el agente revisor no tenía apego al texto y chequeó cada número contra los CSVs crudos. El handoff detectó 5 errores factuales que sobrevivieron mi propia revisión (imputación T008 mal descrita, gap T010 Costanera $1.1M→$1.5M, combinado $5.9M→$6.4M, ratio 2.4×→2.6×, cumplimiento Oceano 93%→92%, frase autocontradictoria en 1.2) y 4 observaciones de calidad analítica (caveat cobertura productos.csv, outliers secundarios 7-feb, decisión explícita `num_boletas` devolución, reframing hipótesis mix T007). Luego una tercera sesión aplicó los cambios — pero **crucialmente, antes de aplicar cada corrección, re-verificó el cálculo contra los CSVs**. En ese doble-check detectó un error en el propio QA (la dirección del efecto de neteo `num_boletas` en la conversión T009 estaba invertida) y lo corrigió al aplicar. Este workflow —autor → revisor ciego → ejecutor con veto— es exactamente el tipo de práctica que usa mucha auditoría financiera, y con IA sale casi gratis.
 
 **¿Qué tuve que corregir?**
 
@@ -567,7 +569,6 @@ Pocas cosas, y casi todas del mismo tipo: **falta de profundidad en la primera p
 Otras correcciones menores:
 
 - **Formato visual:** alineación de tablas en markdown (celdas con bold rompen el ancho del source) y gráficos embebidos con `![...](...)` que no renderizaban consistentemente en todos los visores — los moví al notebook como output de celda, donde renderizan garantizado.
-- **Propuestas técnicamente incorrectas:** imputar nulls de tráfico con media global (corregí a mediana por día-de-la-semana intra-tienda, robusta al outlier del evento Costanera); queries sin `NULLIF` que explotaban con denominadores cero.
 
 ### Principio central
 
