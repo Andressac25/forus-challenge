@@ -64,8 +64,6 @@ ORDER BY a.venta_2026 DESC;
 | Urbana  | $111.787.655  |    3.177 |     $56.006 |  +27.51% |  50.00% |        21.34% |
 | Oceano  |  $96.908.103  |    3.249 |     $47.809 |   -9.86% |  40.95% |        18.50% |
 
-![Ranking cadenas](outputs/figures/fig_ranking_cadenas.png)
-
 **Análisis:**
 
 - **Nordica** es el motor absoluto, con la mayor participación (37%) y un crecimiento sólido. Se apoya en tiendas premium (Costanera, Parque Arauco) que tienen el ticket más alto del retail.
@@ -162,8 +160,6 @@ FROM pivot p CROSS JOIN total_semana ts ORDER BY p.dow;
 | **Sábado** |     $53.903.147 |     $47.514.327 | +13.45% |   20.58% |
 | Domingo    |     $47.973.015 |     $44.089.329 |  +8.81% |   18.31% |
 
-![Patrón semanal](outputs/figures/fig_patron_semanal.png)
-
 **Respuestas a las preguntas del enunciado:**
 
 - **Día más fuerte:** el sábado, con $53.9M de venta promedio y **20.58% del total semanal**.
@@ -222,8 +218,6 @@ ORDER BY pct_cumplimiento DESC;
 | 10 | T003 | Nordica Plaza Vespucio        | Nordica | $44.957.819  | $47.007.185  |   95.64% |  -$2.049.366  | En riesgo  | 24.31% |
 | 11 | T008 | Oceano Plaza Oeste            | Oceano  | $30.214.766  | $34.526.041  |   87.51% |  -$4.311.275  | Bajo meta  | 17.73% |
 | 12 | T007 | Oceano Mall Marina            | Oceano  | $41.589.751  | $48.231.197  |   86.23% |  -$6.641.446  | Bajo meta  | 20.21% |
-
-![Cumplimiento presupuesto](outputs/figures/fig_cumplimiento_presupuesto.png)
 
 **Diagnóstico (cruzando con conversión):**
 
@@ -329,8 +323,6 @@ $$\ln\left(\frac{V_{26}}{V_{25}}\right) = \ln\left(\frac{T_{26}}{T_{25}}\right) 
 
 Suma de los 3 drivers = Δ total (verificado, por propiedad aditiva del logaritmo).
 
-![Drivers Oceano + DDI](outputs/figures/fig_oceano_drivers_y_ddi.png)
-
 ### Hallazgo clave: cada tienda Oceano tiene un driver DIFERENTE
 
 Para no quedarme en "el driver es X", descompongo aún más el ticket en **precio medio por unidad × UPT** (unidades por boleta). Esto separa dos efectos muy distintos: (a) la gente compra productos más baratos, o (b) la gente compra menos cantidad por visita. Las cifras siguen siendo log-deltas (consistente con la tabla superior), por lo que `Δ ticket = Δ precio/uds + Δ UPT` se cumple exactamente.
@@ -420,8 +412,6 @@ La **conversión mejora en las 3 tiendas** (aunque en T008 solo marginalmente), 
 ## 2.3 Evento Costanera — sábado 7-feb 2026
 
 Dos tiendas operan en Costanera Center: T001 (Nordica) y T010 (Urbana). Control principal: sábado siguiente (14-feb). Controles secundarios: sábados de febrero 2025 (01 y 08-feb) como doble validación YoY.
-
-![Evento Costanera](outputs/figures/fig_evento_costanera.png)
 
 ### Comparativo crudo
 
@@ -550,23 +540,38 @@ Cifras en log-deltas (consistentes con la tabla de la sección 2.2). La columna 
 
 **¿Para qué usé la IA?**
 
-1. **Generación de SQL complejas** — en particular la window function del 1.4 (RANK + NULLIF anidado) y la descomposición log-delta de 2.2. Me ahorró ~30 min de escritura.
-2. **Exploración de hipótesis** — "si Oceano cae 10%, ¿es tráfico, conversión o ticket?" La IA propuso la descomposición logarítmica (log-delta) que convierte producto en suma y permite atribuir cuánto pesa cada driver. No habría llegado ahí solo.
-3. **Auto-detección de anomalías** — sugerir z-score **intra-tienda** en vez de z-score global (crítico: T007 y T008 tienen escalas muy distintas; el z global habría enmascarado el outlier del evento Costanera).
-4. **Formato y consistencia** — estructura de markdown, paleta de colores por cadena, formato tabular.
+Usé la IA como **motor de análisis y construcción** — no como un oráculo al que se le pregunta y se copia la respuesta, sino como un par de manos adicional dentro de un workflow donde yo mantuve el control de la metodología y las decisiones de diseño. Claude Code fue la columna vertebral operativa del proyecto; las decisiones analíticas (qué cruzar, con qué profundidad, qué métrica exigir) fueron mías.
 
-**¿Dónde ayudó más / dónde menos?**
+**Flujo real de trabajo:**
 
-*Ayudó mucho:*
+1. **Exploración previa en 3 pasadas.** Antes de entrar al análisis formal corrí 3 exploraciones independientes sobre los CSVs con enfoques distintos (operación por tienda, dinámica YoY por cadena, y calidad/consistencia de datos). Esto me dio el panorama general y las anomalías principales ya detectadas (devolución en T009, nulls de tráfico en T008, asimetría de DDI en Oceano). Llegué a la conversación "formal" con Claude Code sabiendo qué buscar, no preguntando qué hacer.
 
-- Ideas de cruces no obvios: cruzar `productos.csv` con `inventario.csv` para inferir que el sobrestock de T007 es mercadería fuera de temporada (parkas en verano). Yo habría mirado inventario vs ventas sin pasar por el mix.
-- Validación por doble implementación (SQL + pandas) — atrapó un bug donde había filtrado devoluciones en pandas pero no en SQL, dando diferencia de $285K en T009.
+2. **Investigación de skills.** Le pedí a Claude Code que buscara en GitHub las skills más relevantes para analytics y data science. Terminó instalando 25 skills agrupadas (EDA programático, auditoría de calidad de datos, validación SQL, visualización científica, dashboards Streamlit, optimización de queries, detección de anomalías, etc.), cada una con su SKILL.md explicando cuándo invocarla.
 
-*Tuve que corregir:*
+3. **CLAUDE.md como contrato del proyecto.** Junto con Claude construí un CLAUDE.md con todo el contexto: el brief del caso, las decisiones técnicas (SQLite in-memory, formato CLP, paleta por cadena, convenciones de naming), los hallazgos preliminares ya validados, las fórmulas de las métricas, y un mapeo explícito de qué skill correspondía invocar en cada fase del análisis. Este archivo se volvió la fuente única de verdad y permitió que cada iteración nueva partiera del mismo piso sin repetir contexto.
 
-- Propuesta inicial de **imputar nulls con media global** → corregí a **mediana por DOW intra-tienda** (la media habría inflado por el evento Costanera y por las diferencias de escala entre tiendas).
-- Queries con división que explotaban cuando no había tiendas que caían en una cadena → agregué `NULLIF(..., 0)` explícito.
-- Tendencia de la IA a dar respuestas directas ("T007 cae por X"). **Forcé la cuantificación**: no "por ticket", sino "-9.2 pp de los -11.4 pp totales se explican por ticket". La descomposición numérica fue decisión mía.
+4. **Separación estricta entre razonamiento y cálculo.** Regla no negociable del proyecto: **la IA no realiza directamente cálculos que deban ser deterministas** (sumas, promedios, medianas por grupo, z-scores, descomposiciones log-delta, márgenes, conversión, DDI). Esos se delegan a skills con funciones definidas que corren sobre pandas/SQLite con código auditable. El LLM propone hipótesis, escribe queries, describe resultados y critica su propia salida, pero los números siempre los produce código reproducible. Cada query SQL se validó además con una implementación paralela en pandas (paridad 100%) para atrapar discrepancias de implementación.
+
+5. **Profundización iterativa.** Primera pasada de Claude sobre cada sección → lectura crítica mía → pedido explícito de cruces adicionales ("cruza inventario con productos por categoría para ver el mix", "descompón el ticket en precio unitario × UPT para separar efectos", "compara costo promedio del stock vs costo promedio de lo efectivamente vendido"). La mayoría del valor analítico del informe salió de estos cruces de segundo orden que forcé después de leer la primera versión. El patrón fue consistente: primera pasada correcta pero superficial, segunda pasada profunda tras un cross-check dirigido.
+
+6. **Redacción del entregable y notebook.** Usé la IA para la escritura del `.md` final y para convertir el análisis completo a un notebook Jupyter reproducible. En el notebook le pedí específicamente qué tipo de gráfico era más expresivo para cada caso (barras apiladas vs heatmap vs líneas, qué paleta, qué DPI) y ajusté cuando la sugerencia no calzaba con el mensaje que quería comunicar.
+
+7. **Entrega reproducible.** Claude Code se conectó a GitHub, creó el repositorio con las dependencias, la estructura de carpetas y el README, y migró el notebook a Google Colab con el botón "Open in Colab" para que el evaluador lo ejecute sin setup local.
+
+8. **Web app Forus Analytics (side project).** Como bonus, usé Claude Code con skills de desarrollo web para construir [forus-analytics.vercel.app](https://forus-analytics.vercel.app/upload): una app que permite subir los CSVs de este caso (o de cualquier caso similar de retail) y analizarlos interactivamente. Conecta a la API de Anthropic con tu propia API key, de forma que el usuario tenga un asistente de análisis conversacional sobre sus datos en vez de un dashboard pre-armado estático.
+
+**¿Qué tuve que corregir?**
+
+Pocas cosas, y casi todas del mismo tipo: **falta de profundidad en la primera pasada**. La tendencia default de la IA es quedarse en la superficie ("Oceano cae por ticket", "T007 tiene sobrestock"). Tuve que pedirle explícitamente cruces que no había hecho para llegar al diagnóstico real — por ejemplo, comparar el costo promedio del inventario en stock vs el costo promedio de lo efectivamente vendido (ratio 0.67x / 0.58x / 0.50x), cruce que terminó siendo el hallazgo central de la Parte 2.2 (los productos caros no rotan en ninguna tienda Oceano).
+
+Otras correcciones menores:
+
+- **Formato visual:** alineación de tablas en markdown (celdas con bold rompen el ancho del source) y gráficos embebidos con `![...](...)` que no renderizaban consistentemente en todos los visores — los moví al notebook como output de celda, donde renderizan garantizado.
+- **Propuestas técnicamente incorrectas:** imputar nulls de tráfico con media global (corregí a mediana por día-de-la-semana intra-tienda, robusta al outlier del evento Costanera); queries sin `NULLIF` que explotaban con denominadores cero.
+
+### Principio central
+
+La productividad de la IA en analytics no viene de que "resuelva el problema", viene de que **multiplique la velocidad de iteración del analista**. Yo traje el encuadre del caso, los hallazgos preliminares de las 3 exploraciones, y las preguntas de segundo orden que empujan desde "qué pasó" hacia "por qué pasó y qué se hace". Claude Code trajo ejecución rápida, cobertura completa de las convenciones del proyecto, y una memoria de contexto (CLAUDE.md + 25 skills) que eliminó la fricción de repetir instrucciones. Los cálculos determinísticos quedaron en código auditable, no en la cabeza del LLM.
 
 ### Prompt para un agente con acceso directo a SQL (≤5 líneas)
 
@@ -623,7 +628,7 @@ FROM m ORDER BY quality_score DESC;
 | T007 | Oceano Mall Marina         | Oceano  | retail | 20.21%  | $58.660  | 1.52 |   42%  |  7.562 |
 | T012 | Urbana Plaza Egaña         | Urbana  | retail | 19.44%  | $49.684  | 1.55 |   50%  |  7.478 |
 | T008 | Oceano Plaza Oeste         | Oceano  | retail | 17.73%  | $54.441  | 1.62 |   42%  |  6.582 |
-| **T009** | **Oceano Outlet Buenaventura** | Oceano | **outlet** | **28.42%** | $32.901 | 1.67 | 37.95% | 5.911 |
+| T009 | Oceano Outlet Buenaventura | Oceano  | outlet | 28.42%  | $32.901  | 1.67 | 37.95% |  5.911 |
 
 ### Insight no obvio
 
@@ -647,10 +652,7 @@ Este insight conecta con la Recomendación 3: el problema de T009 no es el piso 
 - [`outputs/tables/`](outputs/tables/) — resultados CSV de cada query.
 - [`outputs/figures/`](outputs/figures/) — charts PNG a 300 DPI.
 
-**Para ejecutar el dashboard:**
 
-```bash
-streamlit run src/dashboard.py
-```
+## Web-app Forus Analytics
 
-Luego abre http://localhost:8501 — filtros por cadena/región/tienda en el sidebar, 5 tabs con drill-downs interactivos.
+https://forus-analytics.vercel.app/upload
