@@ -47,7 +47,7 @@ IN_COLAB = 'google.colab' in sys.modules
 
 if IN_COLAB:
     # En Colab clonamos el repo para tener acceso a data/ y src/
-    REPO = 'https://github.com/andresalbornoz25/forus-challenge.git'
+    REPO = 'https://github.com/Andressac25/forus-challenge.git'
     TARGET = '/content/forus-challenge'
     if not os.path.exists(TARGET):
         subprocess.run(['git', 'clone', REPO, TARGET], check=True)
