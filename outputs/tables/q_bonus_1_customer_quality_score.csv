@@ -1,0 +1,13 @@
+cod_local,nombre_tienda,cadena,tipo_tienda,conv_pct,ticket_prom,upt,margen_pct,quality_score
+T001,Nordica Costanera Center,Nordica,retail,21.03,72874.0,1.67,45.0,11538.0
+T002,Nordica Parque Arauco,Nordica,retail,19.53,72217.0,1.7,45.0,10819.0
+T003,Nordica Plaza Vespucio,Nordica,retail,24.31,54693.0,1.7,45.0,10174.0
+T010,Urbana Costanera Center,Urbana,retail,19.91,60875.0,1.63,50.0,9886.0
+T011,Urbana Mall Sport,Urbana,retail,23.28,53965.0,1.57,50.0,9867.0
+T004,Summit Alto Las Condes,Summit,retail,17.54,75847.0,1.52,48.0,9689.0
+T005,Summit Mall Plaza Trébol,Summit,retail,21.83,55618.0,1.58,48.0,9220.0
+T006,Summit Portal Ñuñoa,Summit,retail,20.19,53870.0,1.61,48.0,8423.0
+T007,Oceano Mall Marina,Oceano,retail,20.21,58660.0,1.52,42.0,7562.0
+T012,Urbana Plaza Egaña,Urbana,retail,19.44,49684.0,1.55,50.0,7478.0
+T008,Oceano Plaza Oeste,Oceano,retail,17.73,54441.0,1.62,42.0,6582.0
+T009,Oceano Outlet Buenaventura,Oceano,outlet,28.42,32901.0,1.67,37.95,5911.0

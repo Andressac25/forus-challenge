@@ -1,0 +1,6 @@
+id,tabla,registros,hallazgo,tratamiento
+A1,ventas.csv,T009 2026-02-10,Venta negativa -285.000 CLP (devolucion),"Separar como devoluciones, no incluir en agregados de venta bruta"
+A2,trafico.csv,T008 2026-02-05 a 07,3 dias sin visitantes (sensor caido),Imputar con mediana por DOW de la misma tienda (otras 2 semanas disponibles)
+A3,ventas.csv,Sab 2026-02-07 en T001/T010,Outliers positivos (+45% / +35% vs media),NO remover: es el evento Costanera (senal real). Analizar por separado
+A4,inventario.csv,T007 DDI=72.5 / T008 DDI=6.5,Desbalance extremo intra-cadena Oceano,Flag de riesgo operacional. Analizar redistribucion de stock
+A5,productos.csv,Solo T001/T004/T007/T010,Cobertura parcial (4 de 12 tiendas),Documentar como limitante. No extrapolar conclusiones SKU al resto

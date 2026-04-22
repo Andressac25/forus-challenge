@@ -1,0 +1,13 @@
+cod_local,nombre_tienda,cadena,zona,region,mall,tipo_tienda
+T001,Nordica Costanera Center,Nordica,Oriente,Metropolitana,Costanera Center,retail
+T002,Nordica Parque Arauco,Nordica,Oriente,Metropolitana,Parque Arauco,retail
+T003,Nordica Plaza Vespucio,Nordica,Sur,Metropolitana,Plaza Vespucio,retail
+T004,Summit Alto Las Condes,Summit,Oriente,Metropolitana,Alto Las Condes,retail
+T005,Summit Mall Plaza Trébol,Summit,Centro,Biobío,Mall Plaza Trébol,retail
+T006,Summit Portal Ñuñoa,Summit,Centro,Metropolitana,Portal Ñuñoa,retail
+T007,Oceano Mall Marina,Oceano,Costa,Valparaíso,Mall Marina,retail
+T008,Oceano Plaza Oeste,Oceano,Poniente,Metropolitana,Mall Plaza Oeste,retail
+T009,Oceano Outlet Buenaventura,Oceano,Sur,Metropolitana,Buenaventura,outlet
+T010,Urbana Costanera Center,Urbana,Oriente,Metropolitana,Costanera Center,retail
+T011,Urbana Mall Sport,Urbana,Norte,Metropolitana,Mall Sport,retail
+T012,Urbana Plaza Egaña,Urbana,Centro,Metropolitana,Plaza Egaña,retail
